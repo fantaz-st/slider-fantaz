@@ -45,7 +45,7 @@ const WHITE_TEXTURE = createWhiteTexture();
 
 const ShaderPlane = ({ texturesRef, progressRef }) => {
   const materialRef = useRef();
-  const { viewport, size } = useThree();
+  const { viewport, size, gl } = useThree();
   const inputResolution = useRef(new Vector2(1920, 1080));
   const outputResolution = useRef(new Vector2(size.width, size.height));
 
@@ -65,13 +65,15 @@ const ShaderPlane = ({ texturesRef, progressRef }) => {
   useFrame(() => {
     const material = materialRef.current;
     if (!material) return;
+
+    const dpr = gl.getPixelRatio();
+
     material.uTexture1 = texturesRef.current[0];
     material.uTexture2 = texturesRef.current[1];
     material.uTransitionProgress = progressRef.current;
-    material.uInputResolution = inputResolution.current;
-    material.uOutputResolution = outputResolution.current;
-  });
 
+    material.uOutputResolution = new Vector2(size.width * dpr, size.height * dpr);
+  });
   return (
     <mesh scale={[viewport.width, viewport.height, 1]}>
       <planeGeometry args={[1, 1]} />
@@ -455,7 +457,7 @@ const VideoSlider = () => {
             </div>
           </div>
 
-          <Canvas camera={{ position: [0, 0, 2], fov: 100 }}>
+          <Canvas camera={{ position: [0, 0, 2], fov: 100 }} dpr={[1, 2]}>
             <ShaderPlane texturesRef={texturesRef} progressRef={progressRef} />
           </Canvas>
         </>
