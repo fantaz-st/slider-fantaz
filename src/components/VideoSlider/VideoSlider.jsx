@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { shaderMaterial } from "@react-three/drei";
+import { shaderMaterial, useAspect } from "@react-three/drei";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { SplitText } from "gsap/SplitText";
@@ -26,7 +26,7 @@ const ComplexShaderMaterial = shaderMaterial(
     uTransitionProgress: 0.0,
     uAngle: (45 * Math.PI) / 180,
     uScale: 3,
-    uInputResolution: new Vector2(1920, 1080),
+    uInputResolution: new Vector2(16, 9),
     uOutputResolution: new Vector2(1, 1),
   },
   vertexShader,
@@ -45,42 +45,35 @@ const WHITE_TEXTURE = createWhiteTexture();
 
 const ShaderPlane = ({ texturesRef, progressRef }) => {
   const materialRef = useRef();
-  const { viewport, size, gl } = useThree();
-  const inputResolution = useRef(new Vector2(1920, 1080));
-  const outputResolution = useRef(new Vector2(size.width, size.height));
+  const { viewport } = useThree();
 
-  useEffect(() => {
-    outputResolution.current.set(size.width, size.height);
-  }, [size.width, size.height]);
-
-  useEffect(() => {
-    if (!materialRef.current) return;
-    const m = materialRef.current;
-    m.uOffsetAmount = 3;
-    m.uColumnsCount = 3.0;
-    m.uAngle = (45 * Math.PI) / 180;
-    m.uScale = 3;
-  }, []);
+  const scale = useAspect(viewport.width, viewport.height, 1);
 
   useFrame(() => {
     const material = materialRef.current;
     if (!material) return;
 
-    const tex = texturesRef.current[1]; // or [0] if that's the “current”
-    if (tex?.image?.videoWidth && tex?.image?.videoHeight) {
-      material.uInputResolution = new Vector2(tex.image.videoWidth, tex.image.videoHeight);
-    }
-
-    const dpr = gl.getPixelRatio();
-
     material.uTexture1 = texturesRef.current[0];
     material.uTexture2 = texturesRef.current[1];
     material.uTransitionProgress = progressRef.current;
 
-    material.uOutputResolution = new Vector2(size.width * dpr, size.height * dpr);
+    material.uOffsetAmount = 3;
+    material.uColumnsCount = 3.0;
+    material.uAngle = (45 * Math.PI) / 180;
+    material.uScale = 3;
+
+    const tex = texturesRef.current[1] || texturesRef.current[0];
+    if (tex?.image?.videoWidth && tex?.image?.videoHeight) {
+      material.uInputResolution = new Vector2(tex.image.videoWidth, tex.image.videoHeight);
+    } else {
+      material.uInputResolution = new Vector2(16, 9);
+    }
+
+    material.uOutputResolution = new Vector2(scale[0], scale[1]);
   });
+
   return (
-    <mesh scale={[viewport.width, viewport.height, 1]}>
+    <mesh scale={scale}>
       <planeGeometry args={[1, 1]} />
       <complexShaderMaterial ref={materialRef} />
     </mesh>
