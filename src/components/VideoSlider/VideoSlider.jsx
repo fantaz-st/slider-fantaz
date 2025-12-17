@@ -66,6 +66,11 @@ const ShaderPlane = ({ texturesRef, progressRef }) => {
     const material = materialRef.current;
     if (!material) return;
 
+    const tex = texturesRef.current[1]; // or [0] if that's the “current”
+    if (tex?.image?.videoWidth && tex?.image?.videoHeight) {
+      material.uInputResolution = new Vector2(tex.image.videoWidth, tex.image.videoHeight);
+    }
+
     const dpr = gl.getPixelRatio();
 
     material.uTexture1 = texturesRef.current[0];
